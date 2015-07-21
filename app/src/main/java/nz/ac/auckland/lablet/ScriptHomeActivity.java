@@ -465,4 +465,11 @@ public class ScriptHomeActivity extends Activity {
 
         existingScriptListAdaptor.notifyDataSetChanged();
     }
+
+    /** A temporary test button */
+    public void openOpenCVTestActivity(View view) {
+        Intent intent = new Intent(this, OpenCVTestActivity.class);
+        startActivity(intent);
+        // Do something in response to button
+    }
 }

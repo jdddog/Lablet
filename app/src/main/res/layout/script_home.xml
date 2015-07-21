@@ -5,6 +5,13 @@
               android:layout_width="wrap_content"
               android:layout_height="match_parent">
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Test CV"
+        android:id="@+id/test_cv"
+        android:layout_gravity="center_vertical" />
+
     <view android:layout_width="wrap_content"
           android:layout_height="match_parent"
           class="nz.ac.auckland.lablet.views.InfoSideBar" android:id="@+id/infoSideBar"

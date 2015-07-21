@@ -25,4 +25,8 @@
     <string name="action_update">Update</string>
     <string name="action_add_remote">Add Remote</string>
     <string name="action_restore_default_scripts">Demos</string>
+    <string name="title_activity_open_cvtest">OpenCVTestActivity</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
 </resources>
