@@ -67,10 +67,7 @@ public class CamShiftTracker {
 
         //Get region of interest and convert to HSV color space
         Rect rect = new Rect(x, y, width, height);
-        Mat roi = new Mat(inputFrame, rect);// inputFrame.submat(x, x+width, y, y+height);
-        //this.saveROI(roi);
-
-        //Mat roi =
+        Mat roi = new Mat(inputFrame, rect);
         Imgproc.cvtColor(roi, roi, Imgproc.COLOR_BGR2HSV);
 
         //Calculate HSV histogram for region of interest
