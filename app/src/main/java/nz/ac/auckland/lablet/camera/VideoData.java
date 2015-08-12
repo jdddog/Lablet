@@ -14,13 +14,20 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
+
+import nz.ac.auckland.lablet.camera.decoder.CodecOutputSurface;
+import nz.ac.auckland.lablet.camera.decoder.FrameRenderer;
+import nz.ac.auckland.lablet.camera.decoder.SeekToFrameExtractor;
 import nz.ac.auckland.lablet.experiment.AbstractSensorData;
+import nz.ac.auckland.lablet.experiment.FrameDataModel;
 import nz.ac.auckland.lablet.experiment.IExperimentSensor;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-
+import java.util.concurrent.CountDownLatch;
+import android.opengl.GLSurfaceView;
 
 /**
  * Holds all important data for the camera experiment.
@@ -33,15 +40,27 @@ public class VideoData extends AbstractSensorData {
     private int videoWidth;
     private int videoHeight;
     private int videoFrameRate;
+//    private final SeekToFrameExtractor.IListener frameListenerStrongRef = new SeekToFrameExtractor.IListener() {
+//        @Override
+//        public void onFrameExtracted() {
+//            int i = 1;
+//            //seekFrameLatch.countDown();
+//        }
+//    };
 
     private float recordingFrameRate;
-    //private MediaMetadataRetriever retriever;
-    FFmpegMediaMetadataRetriever retriever;// = new FFmpegMediaMetadataRetriever();
+    SeekToFrameExtractor extractor;
+    CodecOutputSurface outputSurface;
+    //private final CountDownLatch seekFrameLatch = new CountDownLatch(1);
+
 
     static final public String DATA_TYPE = "Video";
 
     public VideoData(IExperimentSensor sourceSensor) {
         super(sourceSensor);
+//        setWillNotDraw(false);
+//        setEGLContextClientVersion(2);
+//        setPreserveEGLContextOnPause(true);
     }
 
     @Override
@@ -67,10 +86,29 @@ public class VideoData extends AbstractSensorData {
     *   Gets Bitmap of video frame
      */
 
-    public Bitmap getVideoFrame(long timeMicroSeconds)
+    public Bitmap getVideoFrame(long timeMicroSeconds)  {
+        extractor.seekToFrameSync(timeMicroSeconds);
+        return outputSurface.getBitmap();
+    }
+
+    public void saveFrame(Bitmap bmp)
     {
-        assert retriever != null;
-        return retriever.getFrameAtTime(timeMicroSeconds, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream("/sdcard/screen_2.png");
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+            // PNG is a lossless format, the compression factor (100) is ignored
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -113,10 +151,33 @@ public class VideoData extends AbstractSensorData {
             return false;
 
         setVideoFileName(storageDir, bundle.getString("videoName"));
+        outputSurface = new CodecOutputSurface(this.getVideoWidth(), this.getVideoHeight());
 
-        //Initialises objects for getVideoFrame
-        retriever = new FFmpegMediaMetadataRetriever();
-        retriever.setDataSource(this.getVideoFile().getAbsolutePath());
+        try {
+            extractor = new SeekToFrameExtractor(this.getVideoFile(), outputSurface.getSurface());
+//            extractor.setListener(new SeekToFrameExtractor.IListener() {
+//                @Override
+//                public void onFrameExtracted() {
+//                    Bitmap bmp = outputSurface.getBitmap();
+//                    saveFrame(bmp);
+//                }
+//            });
+//            frameListenerStrongRef = new SeekToFrameExtractor.IListener() {
+//                @Override
+//                public void onFrameExtracted() {
+//                    seekFrameLatch.countDown();
+//                }
+//            };
+
+//            extractor.setListener(frameListenerStrongRef);
+
+
+//            FrameRenderer frameRenderer = new FrameRenderer(outputSurface, 0);
+//            setRenderer(frameRenderer);
+//            setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         recordingFrameRate = bundle.getFloat("recordingFrameRate", -1);
         return true;

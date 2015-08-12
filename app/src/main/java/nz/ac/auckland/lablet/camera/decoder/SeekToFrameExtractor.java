@@ -55,6 +55,10 @@ public class SeekToFrameExtractor {
         seekToThread.quit();
     }
 
+    public void seekToFrameSync(long positionMicroSeconds) {
+        this.seekToThread.performSeekTo(positionMicroSeconds);
+    }
+
     public boolean seekToFrame(long positionMicroSeconds) {
         Handler seekHandler = seekToThread.getHandler();
         seekHandler.removeMessages(SeekToThread.SEEK_MESSAGE);
@@ -138,7 +142,7 @@ public class SeekToFrameExtractor {
         }
 
         private void performSeekTo(long seekTarget) {
-            final int DEQUE_TIMEOUT = 1000;
+            final int DEQUE_TIMEOUT = 10000;
 
             decoder.flush();
             inputBuffers = decoder.getInputBuffers();

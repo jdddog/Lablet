@@ -13,6 +13,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.util.Log;
@@ -31,6 +32,8 @@ import org.opencv.core.Size;
 
 import nz.ac.auckland.lablet.R;
 //import nz.ac.auckland.lablet.accelerometer.AccelerometerSensorData;
+import nz.ac.auckland.lablet.camera.decoder.CodecOutputSurface;
+import nz.ac.auckland.lablet.camera.decoder.SeekToFrameExtractor;
 import nz.ac.auckland.lablet.experiment.FrameDataModel;
 import nz.ac.auckland.lablet.experiment.MarkerData;
 import nz.ac.auckland.lablet.experiment.MarkerDataModel;
@@ -46,6 +49,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 
 class MotionAnalysisSideBar extends WeakListenable<MotionAnalysisSideBar.IListener> {
@@ -152,6 +156,7 @@ class MotionAnalysisFragmentView extends FrameLayout {
     final private FrameDataModel.IListener dataListenerStrongRef;
     private CamShiftTracker tracker;// = new CamShiftTracker();
     private int previousFrame = -1;
+    private Boolean roiSet = false;
 
     private class GraphSpinnerEntry {
         private String name;
@@ -330,6 +335,9 @@ class MotionAnalysisFragmentView extends FrameLayout {
             public void onFrameChanged(int newFrame) {
                 if(tracker.isROISet())
                 {
+
+
+
                     long startFrameTime = (long)sensorAnalysis.getTimeData().getTimeAt(newFrame-1) * 1000;
                     long endFrameTime = (long)sensorAnalysis.getTimeData().getTimeAt(newFrame) * 1000;
 
@@ -339,7 +347,7 @@ class MotionAnalysisFragmentView extends FrameLayout {
 
                     for(long i = startFrameTime; i <= endFrameTime; i+=increment) {
                         Bitmap bmp = sensorAnalysis.getVideoData().getVideoFrame(i);
-                        //saveFrame(bmp);
+                        saveFrame(bmp, "frame", i);
                         result = tracker.findObject(bmp);
                     }
 
@@ -430,12 +438,44 @@ class MotionAnalysisFragmentView extends FrameLayout {
         }
     }
 
+    public Boolean isBlack(Bitmap bmp)
+    {
+        int size = bmp.getWidth() * bmp.getHeight();
+        int pixels[] = new int[size];
+        bmp.getPixels(pixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+        int color = 0;
+        int totalColor = 0;
+
+        for(int i = 0; i < bmp.getWidth(); i++)
+        {
+            color = Color.red(pixels[i]) + Color.green(pixels[i]) + Color.blue(pixels[i]);
+            totalColor += color;
+        }
+
+        return totalColor == 0;
+    }
+
     public void setRegionOfInterest(MotionAnalysis sensorAnalysis)
     {
         int currentFrame = sensorAnalysis.getFrameDataModel().getCurrentFrame();
         float startFrameTime =  sensorAnalysis.getTimeData().getTimeAt(currentFrame);
+
+//        while(true) {
+//            Bitmap bmp = sensorAnalysis.getVideoData().getVideoFrame((long) (startFrameTime * 1000.0));
+//
+//            if (!isBlack(bmp)) {
+//                break;
+//            }
+//        }
+
+
         Bitmap bmp = sensorAnalysis.getVideoData().getVideoFrame((long) (startFrameTime * 1000.0));
-        //this.saveFrame(bmp);
+        this.saveFrame(bmp, "roi", 0);
+
+        //sensorAnalysis.getVideoData().getVideoFrame(i);
+
+        //bmp = sensorAnalysis.getVideoData().getVideoFrame((long) (startFrameTime * 1000.0));//this.getVideoFrame((long) (startFrameTime * 1000.0)); //sensorAnalysis.getVideoData().getVideoFrame((long) (startFrameTime * 1000.0));
+        //this.saveFrame(bmp, "roi", 1);
 
         PointF tLeftM = sensorAnalysis.getRectMarkers().getMarkerDataAt(1).getPosition();
         PointF bRightM = sensorAnalysis.getRectMarkers().getMarkerDataAt(0).getPosition();
@@ -451,11 +491,11 @@ class MotionAnalysisFragmentView extends FrameLayout {
         tracker.setROI(bmp, x, y, width, height);
     }
 
-    public void saveFrame(Bitmap bmp)
+    public void saveFrame(Bitmap bmp, String name, long id)
     {
         FileOutputStream out = null;
         try {
-            out = new FileOutputStream("/sdcard/screen.png");
+            out = new FileOutputStream("/sdcard/" + name + "_" + id + ".png");
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
             // PNG is a lossless format, the compression factor (100) is ignored
         } catch (Exception e) {

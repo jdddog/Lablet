@@ -43,6 +43,8 @@ public class CamShiftTracker {
     public CamShiftTracker() {
         roiHist = new Mat();
         termCriteria = new TermCriteria(TermCriteria.EPS | TermCriteria.COUNT, 10, 1);
+
+
     }
 
     public boolean isROISet()
